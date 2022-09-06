@@ -5,9 +5,7 @@ import abi from './utils/WavePortal.json';
 
 const App = () => {
   const [currentAccount, setCurrentAccount] = useState("");
-  /**
-   * Create a varaible here that holds the contract address after you deploy!
-   */
+  const [allWaves, setAllWaves] = useState([]); //store all waves and current waves
   const contractAddress = "0xeF8c154E40957D5e8D856a0De177947da7676A41";
   const contractABI = abi.abi;
   
@@ -20,6 +18,7 @@ const App = () => {
         return;
       } else {
         console.log("We have the ethereum object", ethereum);
+        getAllWaves();
       }
 
       const accounts = await ethereum.request({ method: 'eth_accounts' });
@@ -83,6 +82,44 @@ const App = () => {
     }
   }
 
+  //implementing a method to fetch all waves from the blockchain
+  const getAllWaves = async() => {
+    try{
+      const {ethereum} = window;
+
+      if(ethereum){
+        
+        //defining critical stuff to start fetching data from the blockchain
+        const provider = new ethers.providers.Web3Provider(ethereum);
+        const signer = provider.getSigner();
+        const wavePortalContract = new ethers.Contract(contractAddress, contractABI, signer);
+
+        //calling the getAllWaves function in the smart contract
+        const waves = await wavePortalContract.getAllWaves();
+
+        //storing data in a new array
+        let wavesCleaned = [];
+        waves.forEach(wave => {
+          wavesCleaned.push({
+            address: wave.waver,
+            timestamp: new Date(wave.timestamp * 1000),
+            message: wave.message
+          });
+        });
+
+        //storing data in the react state
+         setAllWaves(wavesCleaned);
+
+      }
+      else{
+        console.log("Ethereum Object doesn't exist!!!")
+      }
+    }
+    catch(error){
+      console.log(error)
+    }
+  }
+
   useEffect(() => {
     checkIfWalletIsConnected();
   }, [])
@@ -107,6 +144,16 @@ const App = () => {
             Connect Wallet
           </button>
         )}
+
+        {allWaves.map((wave, index) => {
+          return (
+            <div key={index} style={{ backgroundColor: "OldLace", marginTop: "16px", padding: "8px" }}>
+              <div>Address: {wave.address}</div>
+              <div>Time: {wave.timestamp.toString()}</div>
+              <div>Message: {wave.message}</div>
+            </div>)
+        })}
+        
       </div>
     </div>
   );
